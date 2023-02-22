@@ -116,22 +116,22 @@ _dealloc(ImagingDecoderObject *decoder) {
 
 static PyObject *
 _decode(ImagingDecoderObject *decoder, PyObject *args) {
-    PyObject *input_object, *memview = NULL;
-    Py_buffer *memview_buf;
     UINT8 *buffer;
     Py_ssize_t bufsize;
     int status;
     ImagingSectionCookie cookie;
 
+    PyObject *input_object;
     if (!PyArg_ParseTuple(args, "O", &input_object)) {
         return NULL;
     }
 
     if (PyMemoryView_Check(input_object)) {
-        memview = PyMemoryView_FromObject(input_object);
-        memview_buf = PyMemoryView_GET_BUFFER(memview);
+        PyObject *memview = PyMemoryView_FromObject(input_object);
+        Py_buffer *memview_buf = PyMemoryView_GET_BUFFER(memview);
         buffer = memview_buf->buf;
         bufsize = memview_buf->len;
+        Py_DECREF(memview);
     }
     else if (!PyArg_ParseTuple(args, "y#", &buffer, &bufsize)) {
         return NULL;
@@ -147,7 +147,6 @@ _decode(ImagingDecoderObject *decoder, PyObject *args) {
         ImagingSectionLeave(&cookie);
     }
 
-    Py_XDECREF(memview);
     return Py_BuildValue("ii", status, decoder->state.errcode);
 }
 
